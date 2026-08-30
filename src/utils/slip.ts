@@ -1032,19 +1032,24 @@ path: CoreExecutionPath)
   const usedFixtures = new Set<string>();
   const slots: SlipSlot[] = [];
 
+  // Audit counters: how many raw records the canonical dedup merged away.
+  let rawCandidates = 0;
+  let canonicalCandidateCount = 0;
+
   CORE_ROLES.forEach((role, index) => {
     const ids = markets ? coreCardMarkets(markets, index) : [];
-    const pool = canonicalCandidates(
-      allPatterns.filter((pattern) =>
-      markets && ids.length > 0 ?
-      matchesMarkets(pattern, ids) :
-      index === 0 ?
-      pattern.code === 'BTTS' :
-      index === 1 ?
-      pattern.code === 'O2.5' :
-      pattern.type === 'safety_trend'
-      )
+    const rawPool = allPatterns.filter((pattern) =>
+    markets && ids.length > 0 ?
+    matchesMarkets(pattern, ids) :
+    index === 0 ?
+    pattern.code === 'BTTS' :
+    index === 1 ?
+    pattern.code === 'O2.5' :
+    pattern.type === 'safety_trend'
     );
+    const pool = canonicalCandidates(rawPool);
+    rawCandidates += rawPool.length;
+    canonicalCandidateCount += pool.length;
     const candidate =
     pool.
     filter((pattern) => !usedFixtures.has(pattern.fixtureId)).
