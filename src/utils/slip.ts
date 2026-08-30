@@ -1233,11 +1233,18 @@ strategy: CoreStrategySettings | null)
   );
   if (pool.length === 0) return null;
 
-  const currentIndex = slot.pattern ?
-  pool.findIndex((pattern) => pattern.id === (slot.pattern as PatternHit).id) :
-  -1;
+  // The slot may hold a RAW record (e.g. `streak::BTTS`) while the pool holds
+  // the CANONICAL record for the same market line (e.g. `goal_market::BTTS`).
+  // Their ids differ, so match on the canonical candidate key too — otherwise
+  // currentIndex would be -1 and the swap would restart from the pool head.
+  const currentKey = slot.pattern ? candidateKeyOf(slot.pattern as PatternHit) : null;
+  const currentIndex = currentKey === null ?
+  -1 :
+  pool.findIndex((pattern) =>
+  pattern.id === (slot.pattern as PatternHit).id || candidateKeyOf(pattern) === currentKey
+  );
   const next = pool[(currentIndex + 1) % pool.length];
-  if (!next || slot.pattern && next.id === slot.pattern.id) return null;
+  if (!next || currentKey !== null && candidateKeyOf(next) === currentKey) return null;
 
   return {
     ...draft,

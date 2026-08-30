@@ -551,9 +551,20 @@ export function buildCoreTrace(input: CoreTraceInput): CoreTrace {
   const qualityPassedRows = candidates.filter((candidate) => qualityPassedIds.has(candidate.id));
   const afterEvidenceRows = qualityPassedRows.filter((candidate) => !candidate.failed.includes('band'));
   const conflictRejectedRows = afterEvidenceRows.filter((candidate) => candidate.failed.includes('model_conflict'));
+  // The gated population is built from the PREVIOUS stage (afterEvidenceRows),
+  // never re-derived from the full candidate list — otherwise the stage's
+  // count and lost would be computed from different sets.
+  const afterConflictRows = afterEvidenceRows.filter((candidate) => !candidate.failed.includes('model_conflict'));
   const gatePassing = candidates.filter((candidate) => candidate.failed.length === 0);
-  const vetoedRows = gatePassing.filter((candidate) => candidate.verdict === 'vetoed');
-  const rankedRows = gatePassing.filter((candidate) => candidate.verdict !== 'vetoed');
+  // Funnel integrity check: afterConflictRows must be exactly the production
+  // gatePassing set (same ids, same size). A mismatch is surfaced in the
+  // stage detail instead of silently breaking the funnel arithmetic.
+  const gatePassingIds = new Set(gatePassing.map((candidate) => candidate.id));
+  const funnelConsistent =
+  afterConflictRows.length === gatePassing.length &&
+  afterConflictRows.every((candidate) => gatePassingIds.has(candidate.id));
+  const vetoedRows = afterConflictRows.filter((candidate) => candidate.verdict === 'vetoed');
+  const rankedRows = afterConflictRows.filter((candidate) => candidate.verdict !== 'vetoed');
   const allDisprovedRows = candidates.filter((candidate) => candidate.failed.includes('band'));
 
   const stage = (id: string, label: string, count: number, previousCount: number, detail: string): CoreTraceStage => ({
@@ -570,8 +581,8 @@ export function buildCoreTrace(input: CoreTraceInput): CoreTrace {
   stage('family', `A stratégia piaca (${familyCodes.join(', ') || '—'})`, family.length, allPatterns.length, 'Ezek a jelöltek; a többi piaci sor nem tartozik ehhez a stratégiához.'),
   stage('quality', 'Minőségi kapun belül (kvadráns + minta + stabilitás)', qualityPassedRows.length, family.length, 'Kalibrációtól független minőségi feltételek.'),
   stage('evidence', 'Cáfolt sáv nélkül', afterEvidenceRows.length, qualityPassedRows.length, 'Csak a minőségi kapun már átjutott, megmért és cáfolt saját sáv zár ki.'),
-  stage('gated', 'Core-jelölt (teljes szigorú kapun belül)', gatePassing.length, afterEvidenceRows.length, `A modell–H2H konfliktus ebben a lépésben ${conflictRejectedRows.length} sort érintett.`),
-  stage('profile', `Kiütés-profil után (${vetoActive ? 'ÉLES' : 'ÁRNYÉK'} mód)`, rankedRows.length, gatePassing.length, vetoActive ? 'Éles módban a megjelölt sorok kiesnek.' : 'Árnyék módban a szűrő nem vesz le sort.'),
+  stage('gated', 'Core-jelölt (teljes szigorú kapun belül)', afterConflictRows.length, afterEvidenceRows.length, `A modell–H2H konfliktus ebben a lépésben ${conflictRejectedRows.length} sort érintett.${funnelConsistent ? '' : ' (!! INTEGRITÁSI ELTÉRÉS: a stádium halmaza nem egyezik a gatePassing listával)'}`),
+  stage('profile', `Kiütés-profil után (${vetoActive ? 'ÉLES' : 'ÁRNYÉK'} mód)`, rankedRows.length, afterConflictRows.length, vetoActive ? 'Éles módban a megjelölt sorok kiesnek.' : 'Árnyék módban a szűrő nem vesz le sort.'),
   stage('slots', 'Core kártyára került', readout.coreFilled, rankedRows.length, `Rangsor, egy mérkőzés egy sor, legfeljebb ${readout.coreSlots} kártya.`)];
 
 
