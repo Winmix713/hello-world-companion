@@ -15,7 +15,7 @@ import {
 '../utils/slip';
 import { useRoundAnalysis } from '../hooks/useRoundAnalysis';
 import { defaultSlipMarkets } from '../utils/marketCatalog';
-import { QUICK_STRATEGY, defaultCoreStrategy } from '../utils/coreStrategy';
+import { coreStrategySpecOf, defaultCoreStrategy } from '../utils/coreStrategy';
 import type {
   CoreStrategySettings,
   League,
@@ -66,7 +66,7 @@ export function FixturePredictor() {
   const strategy = settings.coreStrategy ?? defaultCoreStrategy();
   /** The spec that actually drove this run's core selection — module constant,
    *  so its `codes` array is referentially stable for the trace memo. */
-  const activeSpec = QUICK_STRATEGY[strategy.quickStrategy];
+  const activeSpec = coreStrategySpecOf(strategy);
 
   const {
     analyses,
@@ -179,13 +179,22 @@ export function FixturePredictor() {
       );
       return;
     }
+    if (stale) {
+      toast.error('A forduló módosult az elemzés óta — elemzés után menthető.');
+      return;
+    }
     const slip = draftToSlip(draft, round.name, strategy);
     if (slip.lines.length === 0) {
       toast.error('A szelvény üres — nincs mit menteni.');
       return;
     }
-    saveSlip(slip);
-  }, [draft, round.name, saveSlip, strategy]);
+    try {
+      saveSlip(slip);
+    } catch (error) {
+      console.error('[v0] Szelvény mentése sikertelen:', error);
+      toast.error('A szelvény mentése nem sikerült. Ellenőrizd a böngésző tárhelyét.');
+    }
+  }, [draft, round.name, saveSlip, stale, strategy]);
 
   const noData = seasons.length === 0;
   const topPattern = allPatterns[0];
@@ -354,8 +363,8 @@ export function FixturePredictor() {
           <CoreDecisionTracePanel
             analyses={analyses}
             readout={draft?.strategy ?? null}
-            familyCodes={activeSpec.codes}
-            profileVeto={activeSpec.profileVeto} />
+            familyCodes={activeSpec?.codes ?? []}
+            profileVeto={activeSpec?.profileVeto ?? false} />
           
 
           {/* A kártyánkénti szerkesztő megmarad, de nem ez a napi útvonal:
