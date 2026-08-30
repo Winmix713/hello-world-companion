@@ -1084,6 +1084,13 @@ path: CoreExecutionPath)
     );
   });
 
+  // Audit trail: report how many raw records the canonical dedup merged.
+  const duplicateCandidatesMerged = rawCandidates - canonicalCandidateCount;
+  const notes: string[] = [
+  `Core-pool audit: ${rawCandidates} nyers jelölt → ${canonicalCandidateCount} kanonikus jelölt` +
+  (duplicateCandidatesMerged > 0 ? ` (${duplicateCandidatesMerged} duplikátum összeolvasztva).` : ' (nincs összeolvasztott duplikátum).')];
+
+
   return {
     slots,
     readout: null,
@@ -1094,7 +1101,7 @@ path: CoreExecutionPath)
     },
     configError: null,
     usedFixtures,
-    notes: []
+    notes
   };
 }
 
