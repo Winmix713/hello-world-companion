@@ -11,9 +11,9 @@ import type {
   FixtureAnalysis,
   FixtureRound,
   League,
-  M1Fit,
-  SlipDraft } from
+  M1Fit } from
 '../types/winmix';
+import type { SlipDraft } from '../utils/slip';
 
 export type AnalysisStatus = 'idle' | 'running' | 'done' | 'error';
 
