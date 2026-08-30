@@ -586,15 +586,28 @@ export function buildCoreTrace(input: CoreTraceInput): CoreTrace {
   stage('slots', 'Core kártyára került', readout.coreFilled, rankedRows.length, `Rangsor, egy mérkőzés egy sor, legfeljebb ${readout.coreSlots} kártya.`)];
 
 
+  // ATTRIBUTION IS MUTUALLY EXCLUSIVE. Every removed candidate is counted at
+  // exactly ONE cause: the FIRST gate it failed (`failed[0]`, the same value
+  // that drives `primaryCause`). Counting `failed.includes(...)` per cause
+  // double-counted rows that had already been removed upstream — a row losing
+  // on stability AND carrying a disproved band appeared in both buckets, so the
+  // attribution sum exceeded the family size and contradicted the funnel
+  // (quality −2, evidence −4, yet 1 + 1 + 6 = 8 reported causes).
+  const primaryFailure = (candidate: CoreTraceCandidate): string | null =>
+  candidate.failed.length > 0 ? candidate.failed[0] : null;
+  const countPrimary = (condition: string): number =>
+  candidates.filter((candidate) => primaryFailure(candidate) === condition).length;
+
   const attribution = [
-  { cause: 'Kvadráns', count: candidates.filter((candidate) => candidate.failed.includes('decision')).length, detail: "effectiveDecisionOf === 'flat' | 'ignore' (a volatilis másodlagos szintként belefér)" },
-  { cause: 'Hideg minta (ESS)', count: candidates.filter((candidate) => candidate.failed.includes('sample')).length, detail: `ESS < ${H2H_ESS_WARM}` },
-  { cause: 'Stabilitás', count: candidates.filter((candidate) => candidate.failed.includes('stability')).length, detail: `stabilitás < ${CORE_STABILITY_MIN}` },
-  { cause: 'Piac visszamérés (csapatgól)', count: candidates.filter((candidate) => candidate.failed.includes('market_uncalibrated')).length, detail: 'csapatgól-család core tilalom' },
-  { cause: 'Cáfolt sáv', count: allDisprovedRows.length, detail: 'megmért saját sáv, a jelzett valószínűség az intervallumon kívül' },
-  { cause: 'Modell–H2H konfliktus', count: candidates.filter((candidate) => candidate.failed.includes('model_conflict')).length, detail: 'csak feltételes sornál zár ki' },
+  { cause: 'Kvadráns', count: countPrimary('decision'), detail: "effectiveDecisionOf === 'flat' | 'ignore' (a volatilis másodlagos szintként belefér) — elsődleges kizárási okként számolva" },
+  { cause: 'Hideg minta (ESS)', count: countPrimary('sample'), detail: `ESS < ${H2H_ESS_WARM} — elsődleges kizárási okként számolva` },
+  { cause: 'Stabilitás', count: countPrimary('stability'), detail: `stabilitás < ${CORE_STABILITY_MIN} — elsődleges kizárási okként számolva` },
+  { cause: 'Piac visszamérés (csapatgól)', count: countPrimary('market_uncalibrated'), detail: 'csapatgól-család core tilalom — elsődleges kizárási okként számolva' },
+  { cause: 'Cáfolt sáv', count: countPrimary('band'), detail: `megmért saját sáv, a jelzett valószínűség az intervallumon kívül — elsődleges okként ${countPrimary('band')} sor (a minőségi kapun már kiesett sorokkal együtt összesen ${allDisprovedRows.length} sor sávja cáfolt)` },
+  { cause: 'Modell–H2H konfliktus', count: countPrimary('model_conflict'), detail: 'csak feltételes sornál zár ki' },
   { cause: 'Kiütés-profil (ÉLES)', count: vetoedRows.length, detail: 'csak éles veto módban vesz le sort' },
   { cause: 'Rangsor / egy-mérkőzés szabály', count: candidates.filter((candidate) => candidate.verdict === 'outranked' || candidate.verdict === 'flagged_shadow').length, detail: 'nem kizárás — csak nem jutott a három hely valamelyikére' }];
+
 
 
   const conditionalAll = allPatterns.filter((pattern) => evidenceLevelOf(pattern) === 'conditional');
