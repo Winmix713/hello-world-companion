@@ -32,6 +32,11 @@
     "vite.config.ts"
   ],
   "exclude": [
-    "src/components/ui"
+    "src/components/ui",
+    "src/router.tsx",
+    "src/routeTree.gen.ts",
+    "src/routes",
+    "src/server.ts",
+    "src/start.ts"
   ]
 }
