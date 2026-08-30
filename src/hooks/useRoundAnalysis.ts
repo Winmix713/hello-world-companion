@@ -11,9 +11,9 @@ import type {
   FixtureAnalysis,
   FixtureRound,
   League,
-  M1Fit,
-  SlipDraft } from
+  M1Fit } from
 '../types/winmix';
+import type { SlipDraft } from '../utils/slip';
 
 export type AnalysisStatus = 'idle' | 'running' | 'done' | 'error';
 
@@ -86,6 +86,19 @@ strategy?: CoreStrategySettings | null)
     if (analyses.length === 0) return;
     setDraft(buildSlipDraft(analyses, marketsRef.current, strategyRef.current));
   }, [analyses, marketsKey, strategyKey]);
+
+  // A forduló kiürítése után nem maradhat a képernyőn az előző futás
+  // eredménye: a mérkőzéskártyák és a szelvény olyan párosításokra
+  // hivatkoznának, amelyek már nem léteznek. Csak akkor törlünk, ha nincs
+  // egyetlen kitöltött pár sem és épp nem fut elemzés.
+  useEffect(() => {
+    if (ready.length > 0 || running) return;
+    if (analyses.length === 0 && draft === null && analyzedSignature === null) return;
+    setAnalyses([]);
+    setDraft(null);
+    setAnalyzedSignature(null);
+    setProgress(null);
+  }, [analyses.length, analyzedSignature, draft, ready.length, running]);
 
   /**
    * C1 — a FORRÁS bekötése. A pipeline a bejárás végén ligánként kipublikálja

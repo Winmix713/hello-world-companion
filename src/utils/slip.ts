@@ -1266,17 +1266,27 @@ export function hasLines(draft: SlipDraft): boolean {
   return draft.slots.some((slot) => slot.pattern !== null);
 }
 
-/** Fixture labels that occur on more than one line. */
+/**
+ * Fixture labels that occur on more than one line.
+ *
+ * The identity is the `fixtureId`, NOT the display label: two different
+ * fixtures (e.g. one in each league column) can render an identical
+ * `${home} – ${away}` label, and counting labels reported those as a
+ * duplicate — invalidating a perfectly valid slip. The label is only used
+ * for the message shown to the user.
+ */
 export function duplicateFixtures(draft: SlipDraft): string[] {
   const counts = new Map<string, number>();
+  const labels = new Map<string, string>();
   draft.slots.forEach((slot) => {
     if (!slot.pattern) return;
-    const key = slot.pattern.fixtureLabel;
+    const key = slot.pattern.fixtureId;
     counts.set(key, (counts.get(key) ?? 0) + 1);
+    if (!labels.has(key)) labels.set(key, slot.pattern.fixtureLabel);
   });
   return Array.from(counts.entries()).
   filter(([, count]) => count > 1).
-  map(([label]) => label);
+  map(([id]) => labels.get(id) ?? id);
 }
 
 /**

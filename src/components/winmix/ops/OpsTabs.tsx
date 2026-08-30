@@ -4,7 +4,7 @@ import { cn } from '../../../lib/utils';
 export interface TabDescriptor<K extends string> {
   key: K;
   label: string;
-  icon: React.ComponentType<{className?: string;'aria-hidden'?: boolean | 'true';}>;
+  icon: React.ComponentType<any>;
 }
 
 /**

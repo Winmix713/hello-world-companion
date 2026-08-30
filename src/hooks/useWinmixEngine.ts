@@ -855,7 +855,7 @@ export function useWinmixEngine() {
       try {
         const outcome = loadPersistedState(backend);
         if (outcome.state) {
-          restored = { ...restored, ...toPersistedSlice(outcome.state as DomainState) };
+          restored = { ...restored, ...toPersistedSlice(outcome.state as unknown as DomainState) };
           if (outcome.state.migrated) {
             logDiagnostic('info', 'v1 → v2 állapot migráció lefutott.');
           }

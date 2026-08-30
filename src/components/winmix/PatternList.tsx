@@ -70,7 +70,7 @@ export function PatternRow({ pattern }: {pattern: PatternHit;}) {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <SufficiencyBadge level={pattern.sufficiency} />
-          <Icon className={cn('h-3.5 w-3.5', meta.className)} aria-hidden={true} title={meta.title} />
+          <Icon className={cn('h-3.5 w-3.5', meta.className)} aria-hidden={true} {...{ title: meta.title }} />
           <span className="font-mono text-[13px] font-bold tabular-nums text-foreground">
             {pattern.stability}
           </span>

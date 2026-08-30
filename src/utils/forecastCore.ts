@@ -1046,7 +1046,7 @@ outcome: Outcome)
     priorDivergence: forecast.priorDivergence,
     recommendation: forecast.recommendation,
     caveat: forecast.caveat,
-    secondary: forecast.secondary,
+    secondary: { ...forecast.secondary, topScores: forecast.secondary.topScores.map((entry) => ({ ...entry })) },
     reconciliation: reconcile(forecast, outcome)
   };
 }

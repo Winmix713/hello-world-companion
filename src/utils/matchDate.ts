@@ -161,7 +161,7 @@ matches: T[])
 : OrderingResult<T> {
   const total = matches.length;
   const instants = matches.map(instantOf);
-  const dated = instants.reduce((acc, ms) => ms === null ? acc : acc + 1, 0);
+  const dated = instants.reduce<number>((acc, ms) => ms === null ? acc : acc + 1, 0);
 
   const indexed = matches.map((match, index) => ({
     match,

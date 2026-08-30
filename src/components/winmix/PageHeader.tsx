@@ -3,7 +3,7 @@ import { cn } from '../../lib/utils';
 
 interface PageHeaderProps {
   /** Lucide icon component rendered in the title tile. */
-  icon: React.ComponentType<{className?: string;'aria-hidden'?: boolean;}>;
+  icon: React.ComponentType<any>;
   title: string;
   /** The one-paragraph brief explaining what this surface answers. */
   intro: React.ReactNode;

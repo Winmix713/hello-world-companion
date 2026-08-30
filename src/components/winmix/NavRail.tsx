@@ -15,7 +15,7 @@ import type { ViewKey } from '../../types/winmix';
 interface NavItem {
   key: ViewKey;
   label: string;
-  icon: React.ComponentType<{className?: string;'aria-hidden'?: boolean;}>;
+  icon: React.ComponentType<any>;
 }
 
 const NAV_ITEMS: NavItem[] = [
