@@ -111,7 +111,7 @@ export function StateEmptyPanel({
 
 
 
-}: {title: string;message: string;icon?: React.ComponentType<{className?: string;'aria-hidden'?: boolean;}>;action?: React.ReactNode;}) {
+}: {title: string;message: string;icon?: React.ComponentType<any>;action?: React.ReactNode;}) {
   return (
     <Panel className="items-center gap-2 px-6 py-12 text-center">
       <span

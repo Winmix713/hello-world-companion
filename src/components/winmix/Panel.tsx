@@ -114,7 +114,7 @@ export function SectionHeading({
 
 
 
-}: {icon?: React.ComponentType<{className?: string;'aria-hidden'?: boolean;}>;children: React.ReactNode;hint?: React.ReactNode;}) {
+}: {icon?: React.ComponentType<any>;children: React.ReactNode;hint?: React.ReactNode;}) {
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2 pt-1">
       <h2 className="section-label">

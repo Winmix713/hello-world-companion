@@ -22,7 +22,7 @@ interface MetricCardProps {
    */
   interval?: React.ReactNode;
   /** Optional lucide icon shown top-right, mirroring the KPI card spec. */
-  icon?: React.ComponentType<{className?: string;'aria-hidden'?: boolean;}>;
+  icon?: React.ComponentType<any>;
   /** Colour of the `sub` pill. */
   tone?: MetricTone;
   valueClassName?: string;
