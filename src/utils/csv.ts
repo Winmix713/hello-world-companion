@@ -19,14 +19,29 @@ export function parseCsvLine(line: string): string[] {
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
-    if (c === '"') inQuotes = !inQuotes;else
-    if (c === ',' && !inQuotes) {
-      res.push(cur.replace(/^"|"$/g, ''));
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        cur += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      res.push(cur);
       cur = '';
-    } else cur += c;
+    } else {
+      cur += c;
+    }
   }
-  res.push(cur.replace(/^"|"$/g, ''));
+  res.push(cur);
   return res;
+}
+
+function parseStrictInteger(value: string): number | null {
+  const normalized = value.trim();
+  if (!/^-?\\d+$/.test(normalized)) return null;
+  const parsed = Number(normalized);
+  return Number.isSafeInteger(parsed) ? parsed : null;
 }
 
 export interface ParseCsvOptions {
@@ -127,16 +142,16 @@ export function parseCsvText(csvContent: string, options: ParseCsvOptions = {}):
 
     const rawHtHome = idxHtHome !== -1 ? row[idxHtHome]?.trim() : '';
     const rawHtAway = idxHtAway !== -1 ? row[idxHtAway]?.trim() : '';
-    const htHome = rawHtHome ? Number.parseInt(rawHtHome, 10) : NaN;
-    const htAway = rawHtAway ? Number.parseInt(rawHtAway, 10) : NaN;
-    const homeScore = Number.parseInt(row[idxHomeScore], 10);
-    const awayScore = Number.parseInt(row[idxAwayScore], 10);
+    const htHome = rawHtHome ? parseStrictInteger(rawHtHome) : null;
+    const htAway = rawHtAway ? parseStrictInteger(rawHtAway) : null;
+    const homeScore = parseStrictInteger(row[idxHomeScore] ?? '') ?? NaN;
+    const awayScore = parseStrictInteger(row[idxAwayScore] ?? '') ?? NaN;
 
     const check = checkScores({
       homeScore,
       awayScore,
-      htHome: Number.isNaN(htHome) ? null : htHome,
-      htAway: Number.isNaN(htAway) ? null : htAway
+      htHome,
+      htAway
     });
 
     if (check.status === 'rejected') {

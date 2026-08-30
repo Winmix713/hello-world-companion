@@ -65,6 +65,11 @@ function isLeague(value: unknown): value is League {
   return value === 'angol' || value === 'spanyol';
 }
 
+const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
+const MAX_SEASONS = 100;
+const MAX_MATCHES_PER_SEASON = 2_000;
+const MAX_TEXT_LENGTH = 500;
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
@@ -97,6 +102,9 @@ interface SanitizedMatches {
  */
 function sanitizeMatches(raw: unknown): SanitizedMatches {
   if (!Array.isArray(raw)) return { matches: [], dropped: 0, repaired: 0 };
+  if (raw.length > MAX_MATCHES_PER_SEASON) {
+    return { matches: [], dropped: raw.length, repaired: 0 };
+  }
 
   const matches: MatchRow[] = [];
   let dropped = 0;
@@ -108,6 +116,12 @@ function sanitizeMatches(raw: unknown): SanitizedMatches {
       return;
     }
     const row = entry as Partial<MatchRow>;
+    if ([row.home_team, row.away_team, row.date, row.kickoffIso].some(
+      (value) => typeof value === 'string' && value.length > MAX_TEXT_LENGTH
+    )) {
+      dropped++;
+      return;
+    }
     if (
     typeof row.home_team !== 'string' ||
     typeof row.away_team !== 'string' ||
@@ -246,6 +260,13 @@ function sanitizeCalibration(raw: unknown): CalibrationMap {
 
 export function parseImportFile(text: string): ParseImportResult {
   const warnings: string[] = [];
+  if (text.length > MAX_IMPORT_BYTES) {
+    return {
+      payload: null,
+      error: `Az importfájl túl nagy (maximum ${MAX_IMPORT_BYTES / (1024 * 1024)} MB).`,
+      warnings
+    };
+  }
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -276,6 +297,14 @@ export function parseImportFile(text: string): ParseImportResult {
     warnings.push(
       `A fájl séma-verziója ${schemaVersion}, az alkalmazás ${SCHEMA_VERSION}-t használ — a hiányzó mezők alapértelmezéssel töltődnek.`
     );
+  }
+
+  if (raw.seasons.length > MAX_SEASONS) {
+    return {
+      payload: null,
+      error: `Túl sok szezon az importban (maximum ${MAX_SEASONS}).`,
+      warnings
+    };
   }
 
   const seasons: Season[] = [];
