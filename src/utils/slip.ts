@@ -1032,19 +1032,24 @@ path: CoreExecutionPath)
   const usedFixtures = new Set<string>();
   const slots: SlipSlot[] = [];
 
+  // Audit counters: how many raw records the canonical dedup merged away.
+  let rawCandidates = 0;
+  let canonicalCandidateCount = 0;
+
   CORE_ROLES.forEach((role, index) => {
     const ids = markets ? coreCardMarkets(markets, index) : [];
-    const pool = canonicalCandidates(
-      allPatterns.filter((pattern) =>
-      markets && ids.length > 0 ?
-      matchesMarkets(pattern, ids) :
-      index === 0 ?
-      pattern.code === 'BTTS' :
-      index === 1 ?
-      pattern.code === 'O2.5' :
-      pattern.type === 'safety_trend'
-      )
+    const rawPool = allPatterns.filter((pattern) =>
+    markets && ids.length > 0 ?
+    matchesMarkets(pattern, ids) :
+    index === 0 ?
+    pattern.code === 'BTTS' :
+    index === 1 ?
+    pattern.code === 'O2.5' :
+    pattern.type === 'safety_trend'
     );
+    const pool = canonicalCandidates(rawPool);
+    rawCandidates += rawPool.length;
+    canonicalCandidateCount += pool.length;
     const candidate =
     pool.
     filter((pattern) => !usedFixtures.has(pattern.fixtureId)).
@@ -1079,6 +1084,13 @@ path: CoreExecutionPath)
     );
   });
 
+  // Audit trail: report how many raw records the canonical dedup merged.
+  const duplicateCandidatesMerged = rawCandidates - canonicalCandidateCount;
+  const notes: string[] = [
+  `Core-pool audit: ${rawCandidates} nyers jelölt → ${canonicalCandidateCount} kanonikus jelölt` +
+  (duplicateCandidatesMerged > 0 ? ` (${duplicateCandidatesMerged} duplikátum összeolvasztva).` : ' (nincs összeolvasztott duplikátum).')];
+
+
   return {
     slots,
     readout: null,
@@ -1089,7 +1101,7 @@ path: CoreExecutionPath)
     },
     configError: null,
     usedFixtures,
-    notes: []
+    notes
   };
 }
 
@@ -1233,11 +1245,18 @@ strategy: CoreStrategySettings | null)
   );
   if (pool.length === 0) return null;
 
-  const currentIndex = slot.pattern ?
-  pool.findIndex((pattern) => pattern.id === (slot.pattern as PatternHit).id) :
-  -1;
+  // The slot may hold a RAW record (e.g. `streak::BTTS`) while the pool holds
+  // the CANONICAL record for the same market line (e.g. `goal_market::BTTS`).
+  // Their ids differ, so match on the canonical candidate key too — otherwise
+  // currentIndex would be -1 and the swap would restart from the pool head.
+  const currentKey = slot.pattern ? candidateKeyOf(slot.pattern as PatternHit) : null;
+  const currentIndex = currentKey === null ?
+  -1 :
+  pool.findIndex((pattern) =>
+  pattern.id === (slot.pattern as PatternHit).id || candidateKeyOf(pattern) === currentKey
+  );
   const next = pool[(currentIndex + 1) % pool.length];
-  if (!next || slot.pattern && next.id === slot.pattern.id) return null;
+  if (!next || currentKey !== null && candidateKeyOf(next) === currentKey) return null;
 
   return {
     ...draft,

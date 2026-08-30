@@ -377,41 +377,6 @@ gamma: number = H2H_RECENCY_GAMMA)
   };
 }
 
-export interface WeightedH2H {
-  bttsRate: number;
-  over25Rate: number;
-  homeWinRate: number;
-  /** Kish ESS — degrades as the weight concentrates on recent meetings. */
-  effectiveSampleSize: number;
-}
-
-/**
- * Recency-weighted headline H2H rates. Zero-meeting and single-meeting inputs
- * return league priors, never NaN.
- */
-export function computeWeightedH2H(
-meetings: readonly Meeting[],
-gamma: number = H2H_RECENCY_GAMMA)
-: WeightedH2H {
-  const n = meetings.length;
-  if (n === 0) {
-    return { bttsRate: 0.5, over25Rate: 0.5, homeWinRate: 0.33, effectiveSampleSize: 0 };
-  }
-
-  const { weights, effectiveSampleSize } = recencyWeightsOf(n, gamma);
-  let btts = 0;
-  let over25 = 0;
-  let homeWin = 0;
-  meetings.forEach((m, i) => {
-    const w = weights[i];
-    if (m.homeScore > 0 && m.awayScore > 0) btts += w;
-    if (m.homeScore + m.awayScore > 2.5) over25 += w;
-    if (m.homeScore > m.awayScore) homeWin += w;
-  });
-
-  return { bttsRate: btts, over25Rate: over25, homeWinRate: homeWin, effectiveSampleSize };
-}
-
 /** A meeting list with its recency weights and ESS resolved once. */
 interface WeightedPool {
   meetings: Meeting[];
