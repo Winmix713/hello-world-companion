@@ -133,22 +133,35 @@ function emptyTally(): MarketTally {
 }
 
 /** Defensive rehydration: a malformed stored tally degrades to a fresh one. */
+function validProbability(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+function validCount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
+}
+
 function adoptTally(candidate: unknown): MarketTally {
   const fresh = emptyTally();
   if (!candidate || typeof candidate !== 'object') return fresh;
   const raw = candidate as MarketTally;
-  if (!Number.isFinite(raw.n) || raw.n < 0) return fresh;
-  MARKET_CALIBRATION_BANDS.forEach((spec) => {
+  if (!validCount(raw.n) || !validProbability(raw.sumP / Math.max(1, raw.n)) || raw.hits < 0 || raw.hits > raw.n) return fresh;
+
+  let bandTotal = 0;
+  for (const spec of MARKET_CALIBRATION_BANDS) {
     const band = raw.bands?.[spec.key];
-    if (band && Number.isFinite(band.n)) {
-      fresh.bands[spec.key] = { n: band.n, sumP: band.sumP, hits: band.hits };
-    }
-  });
+    if (!band || !validCount(band.n) || band.hits < 0 || band.hits > band.n ||
+        !Number.isFinite(band.sumP) || band.sumP < 0 || band.sumP > band.n) return fresh;
+    fresh.bands[spec.key] = { n: band.n, sumP: band.sumP, hits: band.hits };
+    bandTotal += band.n;
+  }
+  if (bandTotal !== raw.n || !Number.isFinite(raw.sumP) || raw.sumP < 0 || raw.sumP > raw.n ||
+      !Number.isFinite(raw.brier) || raw.brier < 0 || !Number.isFinite(raw.logLoss) || raw.logLoss < 0) return emptyTally();
   fresh.n = raw.n;
-  fresh.sumP = Number.isFinite(raw.sumP) ? raw.sumP : 0;
-  fresh.hits = Number.isFinite(raw.hits) ? raw.hits : 0;
-  fresh.brier = Number.isFinite(raw.brier) ? raw.brier : 0;
-  fresh.logLoss = Number.isFinite(raw.logLoss) ? raw.logLoss : 0;
+  fresh.sumP = raw.sumP;
+  fresh.hits = raw.hits;
+  fresh.brier = raw.brier;
+  fresh.logLoss = raw.logLoss;
   return fresh;
 }
 

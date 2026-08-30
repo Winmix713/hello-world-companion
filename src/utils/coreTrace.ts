@@ -52,7 +52,7 @@ export const CORE_GATE_REGISTRY: readonly CoreGateSpec[] = [
   step: 2,
   name: 'Kvadráns (core szint)',
   file: 'utils/decision.ts + utils/slip.ts',
-  fn: 'decisionQuadrantOf(hitRate, marketConfidence, …) → effectiveDecisionOf',
+  fn: "effectiveDecisionOf → actionable (Primary) vagy volatile (Secondary); flat / ignore kizárás",
   threshold:
   `P = súly. H2H ≥ ${SECONDARY_MARKET_THRESHOLDS.pMin} ÉS C = piaci konfidencia ≥ ` +
   `${SECONDARY_MARKET_THRESHOLDS.cMin} (gól/HT-FT piac, BTTS is); minden más ` +
