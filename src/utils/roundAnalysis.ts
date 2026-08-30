@@ -25,10 +25,10 @@ import type {
   League,
   M1Fit,
   MarketCalibrationState,
-  PatternWeights,
+  PatternWeightMap,
   ReliabilityBand,
   Season,
-  TeamAliasMap } from
+  AliasMap } from
 '../types/winmix';
 
 /** Hány feldolgozott mérkőzés után adjuk vissza a szálat a böngészőnek. */
@@ -62,10 +62,10 @@ export interface LeagueContext {
 export interface AnalyzeRoundParams {
   fixtures: readonly Fixture[];
   seasons: readonly Season[];
-  teamAliasMap: TeamAliasMap;
+  teamAliasMap: AliasMap;
   teamWeights: Partial<Record<League, Record<string, number>>>;
   calibration: Partial<Record<League, {T?: number;}>>;
-  patternWeights: PatternWeights;
+  patternWeights: PatternWeightMap;
   /**
    * C1 — a modell-paraméterek átvezetése. A `predictFixture` és a `forecastCore`
    * mindhármat elsőrangú paraméterként fogadja, az `analyzeFixture` viszont

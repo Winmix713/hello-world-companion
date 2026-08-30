@@ -179,7 +179,7 @@ aliases: Record<string, string>)
  * resolved kickoff instant (falling back to source order when the season is not
  * fully dated) — the same ordering the audit pipeline uses.
  */
-export function buildLeagueHistory(seasons: Season[], league: League): LeagueHistory {
+export function buildLeagueHistory(seasons: readonly Season[], league: League): LeagueHistory {
   const entries: HistoryEntry[] = [];
   seasons.
   filter((s) => s.league === league).
